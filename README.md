@@ -34,3 +34,4 @@ What this does in the target repo:
 - `live_orchestrator.py`: local orchestration loop with dependency-aware scheduling.
 - `scripts/gpu_exec.py`: optional remote GPU validation bridge.
 - `scripts/gpu_modal_app.py`: optional Modal runtime handler.
+- `docs/modal_security_setup.md`: Modal auth/secrets hardening guide and CI template.

@@ -1,0 +1,87 @@
+name: modal-deploy
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "scripts/gpu_modal_app.py"
+      - "config/gpu_backend.toml"
+      - ".github/workflows/modal_deploy.yml"
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: "Modal environment to deploy to"
+        type: choice
+        required: true
+        default: "dev"
+        options:
+          - dev
+          - prod
+
+permissions:
+  contents: read
+
+concurrency:
+  group: modal-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy_dev_on_push:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      MODAL_ENVIRONMENT: dev
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+      MODAL_APP_NAME: ${{ vars.MODAL_APP_NAME }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Modal CLI
+        run: python -m pip install --upgrade modal
+
+      - name: Verify auth
+        run: modal token info
+
+      - name: Deploy app
+        run: modal deploy scripts/gpu_modal_app.py
+
+  deploy_manual:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target_environment }}
+    env:
+      MODAL_ENVIRONMENT: ${{ inputs.target_environment }}
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+      MODAL_APP_NAME: ${{ vars.MODAL_APP_NAME }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Modal CLI
+        run: python -m pip install --upgrade modal
+
+      - name: Guard production branch
+        if: ${{ inputs.target_environment == 'prod' && github.ref != 'refs/heads/main' }}
+        run: |
+          echo "Production deploys are only allowed from main."
+          exit 1
+
+      - name: Verify auth
+        run: modal token info
+
+      - name: Deploy app
+        run: modal deploy scripts/gpu_modal_app.py
