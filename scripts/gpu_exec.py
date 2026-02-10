@@ -36,14 +36,6 @@ class PolicyDecision:
     reason: str
 
 
-def _tail(text: str, max_lines: int = 120) -> str:
-    return tail_lines(text, max_lines=max_lines)
-
-
-def _stream_text(value: str | bytes | None) -> str:
-    return stream_text(value)
-
-
 def _load_config(path: pathlib.Path) -> dict[str, Any]:
     defaults: dict[str, Any] = {
         "backend": {"name": "modal"},
@@ -82,10 +74,6 @@ def _load_config(path: pathlib.Path) -> dict[str, Any]:
         else:
             merged[key] = value
     return merged
-
-
-def _to_int(value: Any, default: int) -> int:
-    return to_int(value, default)
 
 
 def _git_root(path: pathlib.Path) -> pathlib.Path:
@@ -165,13 +153,13 @@ def _decide_execution_mode(
 
     prior_mode = str(state.get("mode") or "hybrid")
     idle_seconds = max(0.0, now_ts - float(state.get("last_activity_epoch") or 0.0))
-    demote_idle_seconds = _to_int(policy.get("demote_idle_seconds"), 1800)
+    demote_idle_seconds = to_int(policy.get("demote_idle_seconds"), 1800)
     if prior_mode == "hot" and idle_seconds >= demote_idle_seconds:
         prior_mode = "hybrid"
 
     history = list(state.get("history") or [])
-    promote_window_seconds = _to_int(policy.get("promote_window_seconds"), 900)
-    promote_attempts = _to_int(policy.get("promote_attempts"), 4)
+    promote_window_seconds = to_int(policy.get("promote_window_seconds"), 900)
+    promote_attempts = to_int(policy.get("promote_attempts"), 4)
     promote_cold_start = float(policy.get("promote_cold_start_median_seconds") or 45)
 
     recent_attempts = [
@@ -267,7 +255,7 @@ def _run_modal_backend(
     artifacts_cfg = config.get("artifacts", {})
     timeouts_cfg = config.get("timeouts", {})
 
-    default_timeout = _to_int(timeouts_cfg.get("default_command_timeout_seconds"), 1200)
+    default_timeout = to_int(timeouts_cfg.get("default_command_timeout_seconds"), 1200)
     timeout_seconds = args.timeout_seconds if args.timeout_seconds else default_timeout
 
     base_prefix = str(artifacts_cfg.get("s3_prefix") or "gpu-runs").strip("/")
@@ -329,7 +317,7 @@ def _run_modal_backend(
     payload_file.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     entrypoint = str(modal_cfg.get("entrypoint") or "scripts/gpu_modal_app.py::submit")
-    submit_timeout = _to_int(
+    submit_timeout = to_int(
         modal_cfg.get("submit_timeout_seconds")
         or timeouts_cfg.get("modal_submit_timeout_seconds"),
         7200,
@@ -354,7 +342,11 @@ def _run_modal_backend(
     if proc.returncode != 0:
         raise RuntimeError(
             "modal submission failed",
-            {"returncode": proc.returncode, "stdout": _tail(proc.stdout), "stderr": _tail(proc.stderr)},
+            {
+                "returncode": proc.returncode,
+                "stdout": tail_lines(proc.stdout),
+                "stderr": tail_lines(proc.stderr),
+            },
         )
 
     result = _parse_result_json(proc.stdout)
@@ -410,8 +402,8 @@ def main() -> int:
             "backend_timeout",
             f"modal submit timed out after {exc.timeout}s",
             {
-                "stdout": _tail(_stream_text(exc.stdout)),
-                "stderr": _tail(_stream_text(exc.stderr)),
+                "stdout": tail_lines(stream_text(exc.stdout)),
+                "stderr": tail_lines(stream_text(exc.stderr)),
             },
         )
         return 70
@@ -438,10 +430,10 @@ def main() -> int:
             print("[gpu_exec] warning: failed to fully clean temp workspace archive", file=sys.stderr)
 
     finished_at = time.time()
-    exit_code = _to_int(result.get("exit_code"), 70)
-    startup_latency_ms = _to_int(result.get("startup_latency_ms"), 0)
-    queue_time_ms = _to_int(result.get("queue_time_ms"), startup_latency_ms)
-    duration_ms = _to_int(result.get("duration_ms"), int((finished_at - started_at) * 1000))
+    exit_code = to_int(result.get("exit_code"), 70)
+    startup_latency_ms = to_int(result.get("startup_latency_ms"), 0)
+    queue_time_ms = to_int(result.get("queue_time_ms"), startup_latency_ms)
+    duration_ms = to_int(result.get("duration_ms"), int((finished_at - started_at) * 1000))
 
     history = list(policy_state.get("history") or [])
     history.append(
@@ -456,7 +448,7 @@ def main() -> int:
             "exit_code": exit_code,
         }
     )
-    history_limit = _to_int(config.get("policy", {}).get("history_limit"), 100)
+    history_limit = to_int(config.get("policy", {}).get("history_limit"), 100)
     if len(history) > history_limit:
         history = history[-history_limit:]
 
@@ -501,10 +493,10 @@ def main() -> int:
         print(stderr_tail, file=sys.stderr)
     if backend_stdout.strip():
         print("[gpu_exec][modal_stdout_tail]")
-        print(_tail(backend_stdout))
+        print(tail_lines(backend_stdout))
     if backend_stderr.strip():
         print("[gpu_exec][modal_stderr_tail]", file=sys.stderr)
-        print(_tail(backend_stderr), file=sys.stderr)
+        print(tail_lines(backend_stderr), file=sys.stderr)
 
     return exit_code
 

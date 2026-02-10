@@ -145,6 +145,15 @@ copy_file "$TEMPLATE_ROOT/scripts/orchestrator/cli.py" "$TARGET_REPO/scripts/orc
 copy_file "$TEMPLATE_ROOT/scripts/orchestrator/models.py" "$TARGET_REPO/scripts/orchestrator/models.py" 0644
 copy_file "$TEMPLATE_ROOT/scripts/orchestrator/manifest.py" "$TARGET_REPO/scripts/orchestrator/manifest.py" 0644
 copy_file "$TEMPLATE_ROOT/scripts/orchestrator/scheduler.py" "$TARGET_REPO/scripts/orchestrator/scheduler.py" 0644
+copy_file "$TEMPLATE_ROOT/scripts/orchestrator/scheduler_args.py" "$TARGET_REPO/scripts/orchestrator/scheduler_args.py" 0644
+copy_file "$TEMPLATE_ROOT/scripts/orchestrator/scheduler_report.py" "$TARGET_REPO/scripts/orchestrator/scheduler_report.py" 0644
+copy_file "$TEMPLATE_ROOT/scripts/orchestrator/scheduler_detection.py" "$TARGET_REPO/scripts/orchestrator/scheduler_detection.py" 0644
+copy_file "$TEMPLATE_ROOT/scripts/orchestrator/scheduler_probe.py" "$TARGET_REPO/scripts/orchestrator/scheduler_probe.py" 0644
+copy_file "$TEMPLATE_ROOT/scripts/orchestrator/scheduler_runtime.py" "$TARGET_REPO/scripts/orchestrator/scheduler_runtime.py" 0644
+copy_file "$TEMPLATE_ROOT/scripts/orchestrator/scheduler_state.py" "$TARGET_REPO/scripts/orchestrator/scheduler_state.py" 0644
+copy_file "$TEMPLATE_ROOT/scripts/orchestrator/scheduler_policy.py" "$TARGET_REPO/scripts/orchestrator/scheduler_policy.py" 0644
+copy_file "$TEMPLATE_ROOT/scripts/orchestrator/scheduler_worker.py" "$TARGET_REPO/scripts/orchestrator/scheduler_worker.py" 0644
+copy_file "$TEMPLATE_ROOT/scripts/orchestrator/scheduler_engine.py" "$TARGET_REPO/scripts/orchestrator/scheduler_engine.py" 0644
 copy_file "$TEMPLATE_ROOT/scripts/gpu_exec.py" "$TARGET_REPO/scripts/gpu_exec.py" 0755
 copy_file "$TEMPLATE_ROOT/scripts/gpu_modal_app.py" "$TARGET_REPO/scripts/gpu_modal_app.py" 0755
 copy_file "$TEMPLATE_ROOT/config/gpu_backend.toml" "$TARGET_REPO/config/gpu_backend.toml" 0644

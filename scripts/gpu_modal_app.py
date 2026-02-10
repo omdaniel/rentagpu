@@ -64,14 +64,6 @@ def _load_config() -> dict[str, Any]:
     return merged
 
 
-def _tail(text: str, max_lines: int = 120) -> str:
-    return tail_lines(text, max_lines=max_lines)
-
-
-def _stream_text(value: str | bytes | None) -> str:
-    return stream_text(value)
-
-
 def _safe_extract_tar(archive_path: pathlib.Path, destination: pathlib.Path) -> None:
     destination.mkdir(parents=True, exist_ok=True)
     with tarfile.open(archive_path, mode="r:gz") as tf:
@@ -190,8 +182,8 @@ def _execute_payload(payload: dict[str, Any], execution_mode: str) -> dict[str, 
             exit_code = proc.returncode
             timed_out = False
         except subprocess.TimeoutExpired as exc:
-            stdout = _stream_text(exc.stdout)
-            stderr = _stream_text(exc.stderr) + f"\ncommand timed out after {timeout_seconds}s"
+            stdout = stream_text(exc.stdout)
+            stderr = stream_text(exc.stderr) + f"\ncommand timed out after {timeout_seconds}s"
             exit_code = 124
             timed_out = True
         finished = time.time()
@@ -268,8 +260,8 @@ def _execute_payload(payload: dict[str, Any], execution_mode: str) -> dict[str, 
             "gpu_type": metadata["gpu_type"],
             "duration_ms": duration_ms,
             "artifact_uri": artifact_uri,
-            "stdout_tail": _tail(stdout),
-            "stderr_tail": _tail(stderr),
+            "stdout_tail": tail_lines(stdout),
+            "stderr_tail": tail_lines(stderr),
             "startup_latency_ms": startup_latency_ms,
             "queue_time_ms": startup_latency_ms,
             "attempt_count_in_container": _REMOTE_INVOCATIONS,
@@ -277,19 +269,15 @@ def _execute_payload(payload: dict[str, Any], execution_mode: str) -> dict[str, 
         }
 
 
-def _to_int(value: Any, default: int) -> int:
-    return to_int(value, default)
-
-
 CONFIG = _load_config()
 MODAL_CONFIG = CONFIG.get("modal", {})
 APP_NAME = str(MODAL_CONFIG.get("app_name") or "rentagpu-executor")
 GPU_TYPE = str(MODAL_CONFIG.get("gpu") or "L4")
-DEFAULT_TIMEOUT_SECONDS = _to_int(MODAL_CONFIG.get("default_timeout_seconds"), 1800)
-HYBRID_SCALEDOWN = _to_int(MODAL_CONFIG.get("scaledown_window"), 600)
-HYBRID_MIN_CONTAINERS = _to_int(MODAL_CONFIG.get("min_containers"), 0)
-HOT_SCALEDOWN = _to_int(MODAL_CONFIG.get("hot_scaledown_window"), 1200)
-HOT_MIN_CONTAINERS = _to_int(MODAL_CONFIG.get("hot_min_containers"), 1)
+DEFAULT_TIMEOUT_SECONDS = to_int(MODAL_CONFIG.get("default_timeout_seconds"), 1800)
+HYBRID_SCALEDOWN = to_int(MODAL_CONFIG.get("scaledown_window"), 600)
+HYBRID_MIN_CONTAINERS = to_int(MODAL_CONFIG.get("min_containers"), 0)
+HOT_SCALEDOWN = to_int(MODAL_CONFIG.get("hot_scaledown_window"), 1200)
+HOT_MIN_CONTAINERS = to_int(MODAL_CONFIG.get("hot_min_containers"), 1)
 BASE_IMAGE = str(MODAL_CONFIG.get("image") or "nvidia/cuda:12.4.1-devel-ubuntu22.04")
 PYTHON_VERSION = str(MODAL_CONFIG.get("python_version") or "3.12")
 
