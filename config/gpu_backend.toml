@@ -1,0 +1,36 @@
+[backend]
+name = "modal"
+
+[modal]
+app_name = "rentagpu-executor"
+entrypoint = "scripts/gpu_modal_app.py::submit"
+gpu = "L4"
+image = "nvidia/cuda:12.4.1-devel-ubuntu22.04"
+python_version = "3.12"
+scaledown_window = 600
+min_containers = 0
+buffer_containers = 1
+hot_scaledown_window = 1200
+hot_min_containers = 1
+hot_buffer_containers = 1
+default_timeout_seconds = 1800
+submit_timeout_seconds = 7200
+
+[policy]
+mode = "hybrid_ttl"
+promote_attempts = 4
+promote_window_seconds = 900
+promote_cold_start_median_seconds = 45
+demote_idle_seconds = 1800
+history_limit = 100
+
+[artifacts]
+s3_bucket = ""
+s3_prefix = "gpu-runs"
+s3_region = "us-east-1"
+s3_endpoint_url = ""
+local_spool_dir = "tmp/live_orchestrator/gpu_artifacts"
+
+[timeouts]
+default_command_timeout_seconds = 1200
+modal_submit_timeout_seconds = 7200
