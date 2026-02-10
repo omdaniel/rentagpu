@@ -1,0 +1,11 @@
+target-version = "py312"
+line-length = 100
+
+exclude = [
+  ".git",
+  "tmp",
+]
+
+[lint]
+select = ["E", "F", "I", "B"]
+ignore = ["E501"]

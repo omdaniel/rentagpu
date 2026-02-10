@@ -67,6 +67,14 @@ def _tail(text: str, max_lines: int = 120) -> str:
     return "\n".join(lines[-max_lines:])
 
 
+def _stream_text(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
+
+
 def _safe_extract_tar(archive_path: pathlib.Path, destination: pathlib.Path) -> None:
     destination.mkdir(parents=True, exist_ok=True)
     with tarfile.open(archive_path, mode="r:gz") as tf:
@@ -185,8 +193,8 @@ def _execute_payload(payload: dict[str, Any], execution_mode: str) -> dict[str, 
             exit_code = proc.returncode
             timed_out = False
         except subprocess.TimeoutExpired as exc:
-            stdout = exc.stdout or ""
-            stderr = (exc.stderr or "") + f"\ncommand timed out after {timeout_seconds}s"
+            stdout = _stream_text(exc.stdout)
+            stderr = _stream_text(exc.stderr) + f"\ncommand timed out after {timeout_seconds}s"
             exit_code = 124
             timed_out = True
         finished = time.time()

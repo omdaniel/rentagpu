@@ -140,6 +140,11 @@ BOOTSTRAP_SOURCE="$TEMPLATE_ROOT/bootstrap_orchestrator_wave.sh"
 
 copy_file "$TEMPLATE_ROOT/bootstrap_orchestrator_wave.sh" "$TARGET_REPO/scripts/bootstrap_orchestrator_wave.sh" 0755
 copy_file "$TEMPLATE_ROOT/live_orchestrator.py" "$TARGET_REPO/scripts/live_orchestrator.py" 0755
+copy_file "$TEMPLATE_ROOT/scripts/orchestrator/__init__.py" "$TARGET_REPO/scripts/orchestrator/__init__.py" 0644
+copy_file "$TEMPLATE_ROOT/scripts/orchestrator/cli.py" "$TARGET_REPO/scripts/orchestrator/cli.py" 0644
+copy_file "$TEMPLATE_ROOT/scripts/orchestrator/models.py" "$TARGET_REPO/scripts/orchestrator/models.py" 0644
+copy_file "$TEMPLATE_ROOT/scripts/orchestrator/manifest.py" "$TARGET_REPO/scripts/orchestrator/manifest.py" 0644
+copy_file "$TEMPLATE_ROOT/scripts/orchestrator/scheduler.py" "$TARGET_REPO/scripts/orchestrator/scheduler.py" 0644
 copy_file "$TEMPLATE_ROOT/scripts/gpu_exec.py" "$TARGET_REPO/scripts/gpu_exec.py" 0755
 copy_file "$TEMPLATE_ROOT/scripts/gpu_modal_app.py" "$TARGET_REPO/scripts/gpu_modal_app.py" 0755
 copy_file "$TEMPLATE_ROOT/config/gpu_backend.toml" "$TARGET_REPO/config/gpu_backend.toml" 0644

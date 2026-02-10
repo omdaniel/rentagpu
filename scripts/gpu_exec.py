@@ -39,6 +39,14 @@ def _tail(text: str, max_lines: int = 120) -> str:
     return "\n".join(lines[-max_lines:])
 
 
+def _stream_text(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
+
+
 def _load_config(path: pathlib.Path) -> dict[str, Any]:
     defaults: dict[str, Any] = {
         "backend": {"name": "modal"},
@@ -416,7 +424,10 @@ def main() -> int:
         _stderr_error(
             "backend_timeout",
             f"modal submit timed out after {exc.timeout}s",
-            {"stdout": _tail(exc.stdout or ""), "stderr": _tail(exc.stderr or "")},
+            {
+                "stdout": _tail(_stream_text(exc.stdout)),
+                "stderr": _tail(_stream_text(exc.stderr)),
+            },
         )
         return 70
     except RuntimeError as exc:
