@@ -22,6 +22,8 @@ except ModuleNotFoundError:  # pragma: no cover
 
 import modal
 
+from scripts.gpu_common import stream_text, tail_lines, to_int
+
 CONFIG_PATH = pathlib.Path(__file__).resolve().parents[1] / "config" / "gpu_backend.toml"
 DEFAULT_CONFIG: dict[str, Any] = {
     "modal": {
@@ -63,16 +65,11 @@ def _load_config() -> dict[str, Any]:
 
 
 def _tail(text: str, max_lines: int = 120) -> str:
-    lines = text.splitlines()
-    return "\n".join(lines[-max_lines:])
+    return tail_lines(text, max_lines=max_lines)
 
 
 def _stream_text(value: str | bytes | None) -> str:
-    if value is None:
-        return ""
-    if isinstance(value, bytes):
-        return value.decode("utf-8", errors="replace")
-    return value
+    return stream_text(value)
 
 
 def _safe_extract_tar(archive_path: pathlib.Path, destination: pathlib.Path) -> None:
@@ -281,10 +278,7 @@ def _execute_payload(payload: dict[str, Any], execution_mode: str) -> dict[str, 
 
 
 def _to_int(value: Any, default: int) -> int:
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return default
+    return to_int(value, default)
 
 
 CONFIG = _load_config()
