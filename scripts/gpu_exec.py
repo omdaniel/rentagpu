@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import importlib
 import json
 import pathlib
 import statistics
@@ -34,6 +35,10 @@ MAX_INLINE_WORKSPACE_BYTES = 8 * 1024 * 1024
 class PolicyDecision:
     mode: str
     reason: str
+
+
+class _ModalSdkUnavailableError(RuntimeError):
+    """Raised when SDK submission cannot be initialized and CLI fallback is needed."""
 
 
 def _load_config(path: pathlib.Path) -> dict[str, Any]:
@@ -243,6 +248,142 @@ def _stderr_error(error_type: str, message: str, details: dict[str, Any] | None 
     print(json.dumps(payload, sort_keys=True), file=sys.stderr)
 
 
+def _entrypoint_module_name(entrypoint: str) -> str:
+    target = entrypoint.split("::", 1)[0].strip()
+    if not target:
+        raise _ModalSdkUnavailableError("empty modal entrypoint")
+
+    if target.endswith(".py"):
+        target = target[:-3]
+    module_name = target.lstrip("./").replace("/", ".").replace("\\", ".")
+    if not module_name:
+        raise _ModalSdkUnavailableError(f"invalid modal entrypoint '{entrypoint}'")
+    return module_name
+
+
+def _resolve_modal_sdk_function(module: Any, *, mode: str, modal_cfg: dict[str, Any]) -> tuple[Any, str]:
+    default_name = "run_gpu_job_hot" if mode == "hot" else "run_gpu_job_hybrid"
+    config_key = "sdk_hot_function" if mode == "hot" else "sdk_hybrid_function"
+    function_name = str(modal_cfg.get(config_key) or default_name)
+
+    fn = getattr(module, function_name, None)
+    if fn is None:
+        raise _ModalSdkUnavailableError(
+            f"module '{module.__name__}' has no '{function_name}' for mode='{mode}'"
+        )
+    remote = getattr(fn, "remote", None)
+    if not callable(remote):
+        raise _ModalSdkUnavailableError(
+            f"attribute '{module.__name__}.{function_name}' is not a modal function"
+        )
+    return fn, function_name
+
+
+def _run_modal_backend_sdk(
+    *,
+    entrypoint: str,
+    mode: str,
+    modal_cfg: dict[str, Any],
+    payload: dict[str, Any],
+    submit_timeout: int,
+) -> tuple[dict[str, Any], str]:
+    module_name = _entrypoint_module_name(entrypoint)
+    try:
+        module = importlib.import_module(module_name)
+    except Exception as exc:
+        raise _ModalSdkUnavailableError(f"failed to import '{module_name}': {exc}") from exc
+
+    fn, function_name = _resolve_modal_sdk_function(module, mode=mode, modal_cfg=modal_cfg)
+
+    try:
+        spawn = getattr(fn, "spawn", None)
+        if callable(spawn):
+            call = spawn(payload)
+            get = getattr(call, "get", None)
+            if callable(get):
+                try:
+                    result = get(timeout=submit_timeout)
+                except TypeError:
+                    result = get()
+            else:
+                result = call
+        else:
+            result = fn.remote(payload)
+    except Exception as exc:
+        error_text = str(exc)
+        if "timeout" in error_text.lower():
+            raise subprocess.TimeoutExpired(
+                cmd=f"modal sdk {module_name}.{function_name}",
+                timeout=submit_timeout,
+                output=None,
+                stderr=error_text,
+            ) from exc
+        raise RuntimeError(
+            "modal sdk submission failed",
+            {
+                "path": "sdk",
+                "module": module_name,
+                "function": function_name,
+                "error": error_text,
+            },
+        ) from exc
+
+    if not isinstance(result, dict) or "run_id" not in result:
+        raise RuntimeError(
+            "modal sdk submission returned invalid payload",
+            {
+                "path": "sdk",
+                "module": module_name,
+                "function": function_name,
+                "result_type": type(result).__name__,
+            },
+        )
+
+    note = (
+        f"[gpu_exec] modal submit path=sdk module={module_name} "
+        f"function={function_name} timeout={submit_timeout}s"
+    )
+    return result, note
+
+
+def _run_modal_backend_cli(
+    *,
+    repo_root: pathlib.Path,
+    entrypoint: str,
+    mode: str,
+    payload_file: pathlib.Path,
+    submit_timeout: int,
+) -> tuple[dict[str, Any], str, str]:
+    cmd = [
+        "modal",
+        "run",
+        entrypoint,
+        "--payload-file",
+        str(payload_file),
+        "--execution-mode",
+        mode,
+    ]
+    proc = subprocess.run(
+        cmd,
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        timeout=submit_timeout,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            "modal submission failed",
+            {
+                "returncode": proc.returncode,
+                "stdout": tail_lines(proc.stdout),
+                "stderr": tail_lines(proc.stderr),
+            },
+        )
+    result = _parse_result_json(proc.stdout)
+    return result, proc.stdout, proc.stderr
+
+
 def _run_modal_backend(
     *,
     repo_root: pathlib.Path,
@@ -322,35 +463,46 @@ def _run_modal_backend(
         or timeouts_cfg.get("modal_submit_timeout_seconds"),
         7200,
     )
-    cmd = [
-        "modal",
-        "run",
-        entrypoint,
-        "--payload-file",
-        str(payload_file),
-        "--execution-mode",
-        mode,
-    ]
-    proc = subprocess.run(
-        cmd,
-        cwd=repo_root,
-        capture_output=True,
-        text=True,
-        timeout=submit_timeout,
-        check=False,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError(
-            "modal submission failed",
-            {
-                "returncode": proc.returncode,
-                "stdout": tail_lines(proc.stdout),
-                "stderr": tail_lines(proc.stderr),
-            },
+
+    fallback_reason = ""
+    try:
+        result, sdk_note = _run_modal_backend_sdk(
+            entrypoint=entrypoint,
+            mode=mode,
+            modal_cfg=modal_cfg,
+            payload=payload,
+            submit_timeout=submit_timeout,
+        )
+        return result, sdk_note, ""
+    except _ModalSdkUnavailableError as exc:
+        fallback_reason = (
+            "[gpu_exec] modal sdk submit unavailable; falling back to CLI: "
+            f"{exc}"
         )
 
-    result = _parse_result_json(proc.stdout)
-    return result, proc.stdout, proc.stderr
+    try:
+        result, cli_stdout, cli_stderr = _run_modal_backend_cli(
+            repo_root=repo_root,
+            entrypoint=entrypoint,
+            mode=mode,
+            payload_file=payload_file,
+            submit_timeout=submit_timeout,
+        )
+    except RuntimeError as exc:
+        if fallback_reason:
+            details: dict[str, Any]
+            if len(exc.args) > 1 and isinstance(exc.args[1], dict):
+                details = dict(exc.args[1])
+            else:
+                details = {}
+            details["sdk_fallback"] = fallback_reason
+            raise RuntimeError(str(exc.args[0]), details) from exc
+        raise
+
+    combined_stdout = cli_stdout
+    if fallback_reason:
+        combined_stdout = f"{fallback_reason}\n{cli_stdout}" if cli_stdout else fallback_reason
+    return result, combined_stdout, cli_stderr
 
 
 def main() -> int:

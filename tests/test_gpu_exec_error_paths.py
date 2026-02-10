@@ -179,6 +179,10 @@ class GpuExecErrorPathTests(unittest.TestCase):
 
             proc = mock.Mock(returncode=1, stdout="modal stdout", stderr="modal stderr")
             with (
+                mock.patch(
+                    "scripts.gpu_exec._run_modal_backend_sdk",
+                    side_effect=gpu_exec._ModalSdkUnavailableError("sdk unavailable"),
+                ),
                 mock.patch("scripts.gpu_exec.subprocess.run", return_value=proc),
                 self.assertRaises(RuntimeError) as ctx,
             ):
@@ -196,6 +200,102 @@ class GpuExecErrorPathTests(unittest.TestCase):
         self.assertEqual(details["returncode"], 1)
         self.assertIn("modal stdout", details["stdout"])
         self.assertIn("modal stderr", details["stderr"])
+        self.assertIn("sdk_fallback", details)
+
+    def test_run_modal_backend_prefers_sdk_when_available(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="gpu_exec_sdk_ok_") as tmp:
+            repo_root = pathlib.Path(tmp)
+            archive = repo_root / "workspace.tar.gz"
+            archive.write_bytes(b"small")
+            args = argparse.Namespace(
+                timeout_seconds=None,
+                artifact_prefix=None,
+                task_id="W101",
+                attempt=1,
+                command="echo ok",
+                gpu=None,
+            )
+            config = {
+                "modal": {
+                    "entrypoint": "scripts/gpu_modal_app.py::submit",
+                    "submit_timeout_seconds": 10,
+                    "gpu": "L4",
+                },
+                "artifacts": {"s3_bucket": "", "s3_prefix": "gpu-runs"},
+                "timeouts": {"default_command_timeout_seconds": 1200},
+            }
+
+            with (
+                mock.patch(
+                    "scripts.gpu_exec._run_modal_backend_sdk",
+                    return_value=(
+                        {"run_id": "sdk-123", "exit_code": 0},
+                        "[gpu_exec] modal submit path=sdk",
+                    ),
+                ) as sdk_mock,
+                mock.patch("scripts.gpu_exec._run_modal_backend_cli") as cli_mock,
+            ):
+                result, backend_stdout, backend_stderr = gpu_exec._run_modal_backend(
+                    repo_root=repo_root,
+                    args=args,
+                    config=config,
+                    mode="hybrid",
+                    workspace_archive=archive,
+                )
+
+        self.assertEqual(result["run_id"], "sdk-123")
+        self.assertIn("path=sdk", backend_stdout)
+        self.assertEqual(backend_stderr, "")
+        sdk_mock.assert_called_once()
+        cli_mock.assert_not_called()
+
+    def test_run_modal_backend_falls_back_to_cli_when_sdk_unavailable(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="gpu_exec_sdk_fallback_") as tmp:
+            repo_root = pathlib.Path(tmp)
+            archive = repo_root / "workspace.tar.gz"
+            archive.write_bytes(b"small")
+            args = argparse.Namespace(
+                timeout_seconds=None,
+                artifact_prefix=None,
+                task_id="W101",
+                attempt=1,
+                command="echo ok",
+                gpu=None,
+            )
+            config = {
+                "modal": {
+                    "entrypoint": "scripts/gpu_modal_app.py::submit",
+                    "submit_timeout_seconds": 10,
+                    "gpu": "L4",
+                },
+                "artifacts": {"s3_bucket": "", "s3_prefix": "gpu-runs"},
+                "timeouts": {"default_command_timeout_seconds": 1200},
+            }
+
+            proc = mock.Mock(
+                returncode=0,
+                stdout='{"run_id":"cli-456","exit_code":0}',
+                stderr="",
+            )
+            with (
+                mock.patch(
+                    "scripts.gpu_exec._run_modal_backend_sdk",
+                    side_effect=gpu_exec._ModalSdkUnavailableError("no sdk fn"),
+                ),
+                mock.patch("scripts.gpu_exec.subprocess.run", return_value=proc) as run_mock,
+            ):
+                result, backend_stdout, backend_stderr = gpu_exec._run_modal_backend(
+                    repo_root=repo_root,
+                    args=args,
+                    config=config,
+                    mode="hybrid",
+                    workspace_archive=archive,
+                )
+
+        self.assertEqual(result["run_id"], "cli-456")
+        self.assertIn("falling back to CLI", backend_stdout)
+        self.assertEqual(backend_stderr, "")
+        run_mock.assert_called_once()
 
 
 if __name__ == "__main__":
