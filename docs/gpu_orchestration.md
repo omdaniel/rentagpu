@@ -101,6 +101,24 @@ Note: when no S3 bucket is configured, workspace snapshots are sent inline; larg
 - Preserve classifier-friendly failures by ensuring remote stdout/stderr tails are surfaced.
 - Use `--hot-mode on|off|auto` only when policy override is needed.
 
+## Local NVIDIA Benchmarking
+
+When running validation commands on a local NVIDIA workstation, you can keep worker throughput high
+while serializing local GPU validation to avoid benchmark contention:
+
+```bash
+python3 -B scripts/live_orchestrator.py \
+  --manifest docs/executor_packets/<wave>/manifest.json \
+  --max-parallel 4 \
+  --validation-executor orchestrator
+```
+
+How this works:
+
+- `--max-parallel N` keeps multiple code-generation workers active.
+- `--validation-executor orchestrator` tells workers not to run validation commands directly.
+- The orchestrator runs packet validation commands after worker completion, one task at a time.
+
 ## Troubleshooting
 
 - `unsupported backend`: pass `--backend modal`.

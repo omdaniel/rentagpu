@@ -105,7 +105,12 @@ def ensure_worktree(
     return worktree
 
 
-def build_prompt(task: TaskState, profile: ModelProfile) -> str:
+def build_prompt(
+    task: TaskState,
+    profile: ModelProfile,
+    *,
+    validation_executor: str = "dual",
+) -> str:
     spec = task.spec
     runtime = task.runtime
     allowed = sorted(spec.allowed_files)
@@ -123,6 +128,18 @@ def build_prompt(task: TaskState, profile: ModelProfile) -> str:
     validation_block = "\n".join(f"- `{cmd}`" for cmd in validations) or "- (none parsed)"
     deps = ", ".join(spec.depends_on) if spec.depends_on else "none"
 
+    if validation_executor == "orchestrator":
+        validation_instruction = (
+            "4. Do not run validation commands yourself. The orchestrator will run "
+            "the packet validation commands after your worker exits.\n"
+            "5. If blocked, explain the blocker with exact failing command/output.\n"
+        )
+    else:
+        validation_instruction = (
+            "4. Run validation commands before exiting.\n"
+            "5. If blocked, explain the blocker with exact failing command/output.\n"
+        )
+
     return (
         f"You are executing packet {spec.task_id}.\n"
         f"Packet path: {spec.packet_path}\n"
@@ -133,8 +150,7 @@ def build_prompt(task: TaskState, profile: ModelProfile) -> str:
         f"1. Read and execute: `{spec.packet_path}`.\n"
         "2. Edit only the allowed files below.\n"
         "3. Keep changes minimal and aligned with packet objective.\n"
-        "4. Run validation commands before exiting.\n"
-        "5. If blocked, explain the blocker with exact failing command/output.\n"
+        f"{validation_instruction}"
         "\nAllowed files:\n"
         f"{allowed_block}\n"
         "\nValidation commands:\n"

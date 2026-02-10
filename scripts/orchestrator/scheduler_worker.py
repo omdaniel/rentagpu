@@ -28,6 +28,7 @@ def launch_task(
     task: TaskState,
     profiles: list[ModelProfile],
     worker_template: str,
+    validation_executor: str,
     base_ref: str,
     dry_run: bool,
     events: EventSink,
@@ -59,7 +60,11 @@ def launch_task(
         base_ref=base_ref,
     )
 
-    prompt = build_prompt(task, profile)
+    prompt = build_prompt(
+        task,
+        profile,
+        validation_executor=validation_executor,
+    )
     prompt_file = dirs.prompts / f"{task.spec.task_id}_attempt_{runtime.attempts:02d}.txt"
     log_file = dirs.logs / f"{task.spec.task_id}_attempt_{runtime.attempts:02d}.log"
     prompt_file.write_text(prompt, encoding="utf-8")

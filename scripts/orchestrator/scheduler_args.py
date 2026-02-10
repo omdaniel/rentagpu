@@ -121,6 +121,17 @@ def parse_args() -> argparse.Namespace:
         help="Timeout per validation command execution.",
     )
     parser.add_argument(
+        "--validation-executor",
+        choices=["dual", "orchestrator"],
+        default="dual",
+        help=(
+            "Validation execution strategy. 'dual' keeps worker-side validation "
+            "instructions plus orchestrator-side validation (default). "
+            "'orchestrator' tells workers to skip validation and lets the "
+            "orchestrator run validation commands exclusively."
+        ),
+    )
+    parser.add_argument(
         "--worker-timeout-seconds",
         type=int,
         default=0,

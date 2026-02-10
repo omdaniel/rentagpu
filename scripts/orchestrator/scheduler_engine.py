@@ -131,9 +131,11 @@ def main() -> int:
         "start",
         (
             f"Live orchestrator started with {len(tasks)} tasks, "
-            f"max_parallel={args.max_parallel}, dry_run={args.dry_run}."
+            f"max_parallel={args.max_parallel}, dry_run={args.dry_run}, "
+            f"validation_executor={args.validation_executor}."
         ),
         manifest=str(manifest_path),
+        validation_executor=args.validation_executor,
     )
 
     try:
@@ -250,6 +252,7 @@ def main() -> int:
                             task=task,
                             profiles=profiles,
                             worker_template=worker_template,
+                            validation_executor=args.validation_executor,
                             base_ref=args.base_ref,
                             dry_run=args.dry_run,
                             events=events,
