@@ -1,0 +1,58 @@
+# Packet {{TASK_ID}}: Task {{TASK_INDEX}}
+
+Backlog source: `{{BACKLOG_REL}}`
+
+## Objective
+
+Describe what this packet changes and why.
+
+## Dependencies
+
+- {{DEPENDENCIES_TEXT}}
+
+## Allowed Files
+
+- `<replace-with-allowed-file-1>`
+- `<replace-with-allowed-file-2>`
+
+## Forbidden Files
+
+- `infra/`
+- `.github/`
+
+## Required Outcomes
+
+- Define expected behavior/results.
+
+## Implementation Checklist
+
+1. Step 1.
+2. Step 2.
+
+## Validation Commands
+
+```bash
+python3 scripts/gpu_exec.py \
+  --backend modal \
+  --task-id {{TASK_ID}} \
+  --attempt ${GPU_ATTEMPT:-1} \
+  --command "echo 'TODO: replace remote GPU validation command for {{TASK_ID}}'"
+```
+
+## Required Evidence in Handoff
+
+- Key output lines for validation commands.
+- Any skipped steps and reasons.
+
+## Definition of Done
+
+- Validation commands pass.
+- Scope gate passes (allowed files only).
+
+## Fast Executor Prompt (Copy/Paste)
+
+```text
+Execute packet {{TASK_ID}} from {{PACKET_REL}}.
+Respect allowed files exactly.
+Return status in the required format with validation evidence.
+```

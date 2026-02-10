@@ -1,0 +1,27 @@
+# Refactor Plan ({{WAVE}})
+
+This document defines the planning scaffold for packetized refactors executed by `scripts/live_orchestrator.py`.
+
+## Goals
+
+- Break large refactors into dependency-safe packets.
+- Enable parallel execution for independent tasks.
+- Enforce strict file-scope and validation gates.
+
+## Non-Goals
+
+- Unscoped architecture redesign.
+- Opportunistic cleanup unrelated to packet objectives.
+- CI/release redesign unless explicitly packetized.
+
+## Wave Boundaries
+
+- Current wave: `{{WAVE}}`
+- Add future waves under `docs/executor_packets/<wave>/` with separate manifests.
+
+## Orchestration Contract
+
+- Machine-readable queue: `docs/executor_packets/{{WAVE}}/manifest.json`
+- Packet specs: one markdown packet per task in `docs/executor_packets/{{WAVE}}/`
+- Human ledger: `docs/executor_packets/{{WAVE}}/orchestrator_state.md`
+- Integration gate: `scripts/orchestrator_gate.sh`

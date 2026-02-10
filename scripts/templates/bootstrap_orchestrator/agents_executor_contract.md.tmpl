@@ -1,0 +1,19 @@
+## Orchestrator/Executor Contract
+
+When executing packetized refactor tasks:
+
+- Read the assigned packet file under `docs/executor_packets/<wave>/`.
+- Edit only files listed under that packet's `## Allowed Files`.
+- Run all commands listed under that packet's `## Validation Commands`.
+- If task cannot be completed within allowed files, return `blocked` and explain exact blocker.
+- Do not commit generated/transient artifacts (`tmp/`, build caches, etc).
+- Return status in this format:
+
+```text
+[TASK] <ID>
+[STATE] completed|blocked
+[FILES] <comma-separated edited files>
+[VALIDATION] ran: <commands>
+[EVIDENCE] <key output lines and skipped-step reasons>
+[BLOCKERS] none|<details>
+```

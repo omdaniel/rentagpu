@@ -52,6 +52,29 @@ class InjectTemplateSchedulerModulesTests(unittest.TestCase):
             present = {path.name for path in orchestrator_dir.glob("scheduler*.py")}
             self.assertTrue(expected.issubset(present), msg=f"missing: {expected - present}")
 
+            self.assertTrue(
+                (target_repo / "scripts" / "bootstrap_orchestrator_wave.py").exists(),
+                msg="bootstrap_orchestrator_wave.py was not copied",
+            )
+            template_dir = target_repo / "scripts" / "templates" / "bootstrap_orchestrator"
+            template_expected = {
+                "refactor_plan.md.tmpl",
+                "atomic_decomposition_guide.md.tmpl",
+                "planning_session_prompt.md.tmpl",
+                "backlog_skeleton.md.tmpl",
+                "packet_skeleton.md.tmpl",
+                "wave_readme.md.tmpl",
+                "orchestrator_state.md.tmpl",
+                "orchestrator_gate.sh.tmpl",
+                "agents_executor_contract.md.tmpl",
+                "agents_planning_contract.md.tmpl",
+            }
+            template_present = {path.name for path in template_dir.glob("*.tmpl")}
+            self.assertTrue(
+                template_expected.issubset(template_present),
+                msg=f"missing templates: {template_expected - template_present}",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

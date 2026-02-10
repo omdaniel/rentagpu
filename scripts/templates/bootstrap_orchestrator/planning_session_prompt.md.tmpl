@@ -1,0 +1,30 @@
+# Planning Session Prompt Template ({{WAVE}})
+
+Use this in a fresh planning session so decomposition aligns with the orchestrator.
+
+## Required Inputs
+
+- `docs/refactor_plan.md`
+- `docs/executor_packets/{{WAVE}}/ATOMIC_DECOMPOSITION_GUIDE.md`
+- Existing architecture notes / backlog docs in this repository.
+
+## Planner Instructions
+
+1. Decompose work into packet tasks that can be executed asynchronously where safe.
+2. For each packet, define:
+   - objective and success criteria
+   - exact `Allowed Files` (prefer disjoint paths for parallel packets)
+   - deterministic `Validation Commands`
+3. Explicitly identify:
+   - packets that are ready immediately
+   - packets blocked by dependencies
+4. Encode ordering in `docs/executor_packets/{{WAVE}}/manifest.json`:
+   - use `depends_on` for hard dependencies
+   - use `can_run_in_parallel_with` only as advisory hints
+5. Produce blocker notes for any packet that cannot be scoped without expanding allowed files.
+
+## Required Planning Output
+
+- Updated packet markdown files under `docs/executor_packets/{{WAVE}}/`
+- Updated `docs/executor_packets/{{WAVE}}/manifest.json`
+- Updated `docs/executor_packets/{{WAVE}}/orchestrator_state.md` status table

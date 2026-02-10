@@ -29,7 +29,8 @@ What this does in the target repo:
 
 ## Key Files in This Template
 
-- `bootstrap_orchestrator_wave.sh`: base packet/manifest bootstrapper.
+- `scripts/bootstrap_orchestrator_wave.py`: base packet/manifest bootstrapper.
+- `scripts/templates/bootstrap_orchestrator/`: markdown/shell templates rendered by the bootstrap tool.
 - `scripts/inject_orchestration_template.sh`: one-command injector for target repos.
 - `live_orchestrator.py`: compatibility entrypoint to modular orchestrator code.
 - `scripts/orchestrator/`: orchestrator modules (`models`, `manifest`, `scheduler`, `cli`).

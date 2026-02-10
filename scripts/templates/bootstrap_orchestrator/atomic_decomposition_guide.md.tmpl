@@ -1,0 +1,28 @@
+# Atomic Task Decomposition Guide ({{WAVE}})
+
+Use this rubric before editing packet files and manifest dependencies.
+
+## Atomic Packet Rules
+
+- One packet should target one coherent objective.
+- Prefer 1-4 owned files per packet.
+- Avoid overlapping `Allowed Files` across packets that may run in parallel.
+- Keep packet validation commands packet-local and deterministic.
+
+## Parallelism Rules
+
+- Packets with disjoint `Allowed Files` and no semantic dependency can run in parallel.
+- Encode ordering in `depends_on`.
+- `can_run_in_parallel_with` is advisory; `depends_on` is authoritative.
+
+## Dependency Rules
+
+- A packet should depend only on tasks whose outputs it directly requires.
+- Keep dependency chains shallow where possible.
+- Use a final integration packet to collect cross-cutting updates.
+
+## Packet Completion Rules
+
+- Executor must return `completed` or `blocked`.
+- Block when scope must expand beyond `Allowed Files`.
+- Include exact failing validation command output on block.

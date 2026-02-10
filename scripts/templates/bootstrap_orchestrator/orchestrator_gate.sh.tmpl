@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Baseline integration gate for orchestrated refactor waves.
+# Replace or extend this command set to match your repository stack.
+
+ran_any=0
+
+if command -v cargo >/dev/null 2>&1 && [[ -f Cargo.toml ]]; then
+  ran_any=1
+  cargo check --workspace
+fi
+
+if command -v swift >/dev/null 2>&1 && [[ -f Package.swift ]]; then
+  ran_any=1
+  swift build -c debug
+fi
+
+if command -v python3 >/dev/null 2>&1 && [[ -d tests ]]; then
+  ran_any=1
+  python3 -m pytest
+fi
+
+if command -v npm >/dev/null 2>&1 && [[ -f package.json ]]; then
+  ran_any=1
+  npm test --if-present
+fi
+
+if [[ "$ran_any" -eq 0 ]]; then
+  echo "No gate commands executed. Customize scripts/orchestrator_gate.sh for this repo." >&2
+  exit 2
+fi

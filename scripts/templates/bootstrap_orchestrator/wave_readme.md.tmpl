@@ -1,0 +1,46 @@
+# {{WAVE}} Executor Packets (Template)
+
+This folder contains packetized tasks for orchestrated refactor execution.
+
+## Execution Contract
+
+- Executor edits are limited to packet `Allowed Files`.
+- If required changes exceed packet scope, return `blocked` with precise blocker details.
+- Do not add generated/transient artifacts (`tmp/`, build caches, etc.) to tracked files.
+- Every packet return must include command-level validation evidence.
+
+## Recommended Dispatch Order
+
+1. Run ready packets with no dependencies in parallel.
+2. Promote dependent packets once prerequisites are completed.
+3. Run integration gate after all packets complete.
+
+## Required Executor Return Format
+
+```text
+[TASK] <ID>
+[STATE] completed|blocked
+[FILES] ...
+[VALIDATION] ran: ...
+[EVIDENCE] key output lines + skipped step reason
+[BLOCKERS] none|...
+```
+
+## Integration Gate
+
+Run from repository root:
+
+```bash
+bash scripts/orchestrator_gate.sh
+```
+
+## Quota-Aware Orchestration
+
+If Codex API usage limits are hit, use quota controls:
+
+```bash
+python3 -B scripts/live_orchestrator.py \
+  --manifest docs/executor_packets/{{WAVE}}/manifest.json \
+  --quota-cooldown-seconds 900 \
+  --quota-max-failures-per-task 3
+```

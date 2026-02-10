@@ -133,12 +133,12 @@ fi
 TARGET_REPO="$(cd "$TARGET_REPO" && pwd)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-BOOTSTRAP_SOURCE="$TEMPLATE_ROOT/bootstrap_orchestrator_wave.sh"
+BOOTSTRAP_SOURCE="$TEMPLATE_ROOT/scripts/bootstrap_orchestrator_wave.py"
 
 [[ -f "$BOOTSTRAP_SOURCE" ]] || die "bootstrap script missing at $BOOTSTRAP_SOURCE"
 [[ -f "$TEMPLATE_ROOT/live_orchestrator.py" ]] || die "live_orchestrator.py missing in template root"
 
-copy_file "$TEMPLATE_ROOT/bootstrap_orchestrator_wave.sh" "$TARGET_REPO/scripts/bootstrap_orchestrator_wave.sh" 0755
+copy_file "$TEMPLATE_ROOT/scripts/bootstrap_orchestrator_wave.py" "$TARGET_REPO/scripts/bootstrap_orchestrator_wave.py" 0755
 copy_file "$TEMPLATE_ROOT/live_orchestrator.py" "$TARGET_REPO/scripts/live_orchestrator.py" 0755
 copy_file "$TEMPLATE_ROOT/scripts/orchestrator/__init__.py" "$TARGET_REPO/scripts/orchestrator/__init__.py" 0644
 copy_file "$TEMPLATE_ROOT/scripts/orchestrator/cli.py" "$TARGET_REPO/scripts/orchestrator/cli.py" 0644
@@ -156,11 +156,21 @@ copy_file "$TEMPLATE_ROOT/scripts/orchestrator/scheduler_worker.py" "$TARGET_REP
 copy_file "$TEMPLATE_ROOT/scripts/orchestrator/scheduler_engine.py" "$TARGET_REPO/scripts/orchestrator/scheduler_engine.py" 0644
 copy_file "$TEMPLATE_ROOT/scripts/gpu_exec.py" "$TARGET_REPO/scripts/gpu_exec.py" 0755
 copy_file "$TEMPLATE_ROOT/scripts/gpu_modal_app.py" "$TARGET_REPO/scripts/gpu_modal_app.py" 0755
+copy_file "$TEMPLATE_ROOT/scripts/templates/bootstrap_orchestrator/refactor_plan.md.tmpl" "$TARGET_REPO/scripts/templates/bootstrap_orchestrator/refactor_plan.md.tmpl" 0644
+copy_file "$TEMPLATE_ROOT/scripts/templates/bootstrap_orchestrator/atomic_decomposition_guide.md.tmpl" "$TARGET_REPO/scripts/templates/bootstrap_orchestrator/atomic_decomposition_guide.md.tmpl" 0644
+copy_file "$TEMPLATE_ROOT/scripts/templates/bootstrap_orchestrator/planning_session_prompt.md.tmpl" "$TARGET_REPO/scripts/templates/bootstrap_orchestrator/planning_session_prompt.md.tmpl" 0644
+copy_file "$TEMPLATE_ROOT/scripts/templates/bootstrap_orchestrator/backlog_skeleton.md.tmpl" "$TARGET_REPO/scripts/templates/bootstrap_orchestrator/backlog_skeleton.md.tmpl" 0644
+copy_file "$TEMPLATE_ROOT/scripts/templates/bootstrap_orchestrator/packet_skeleton.md.tmpl" "$TARGET_REPO/scripts/templates/bootstrap_orchestrator/packet_skeleton.md.tmpl" 0644
+copy_file "$TEMPLATE_ROOT/scripts/templates/bootstrap_orchestrator/wave_readme.md.tmpl" "$TARGET_REPO/scripts/templates/bootstrap_orchestrator/wave_readme.md.tmpl" 0644
+copy_file "$TEMPLATE_ROOT/scripts/templates/bootstrap_orchestrator/orchestrator_state.md.tmpl" "$TARGET_REPO/scripts/templates/bootstrap_orchestrator/orchestrator_state.md.tmpl" 0644
+copy_file "$TEMPLATE_ROOT/scripts/templates/bootstrap_orchestrator/orchestrator_gate.sh.tmpl" "$TARGET_REPO/scripts/templates/bootstrap_orchestrator/orchestrator_gate.sh.tmpl" 0644
+copy_file "$TEMPLATE_ROOT/scripts/templates/bootstrap_orchestrator/agents_executor_contract.md.tmpl" "$TARGET_REPO/scripts/templates/bootstrap_orchestrator/agents_executor_contract.md.tmpl" 0644
+copy_file "$TEMPLATE_ROOT/scripts/templates/bootstrap_orchestrator/agents_planning_contract.md.tmpl" "$TARGET_REPO/scripts/templates/bootstrap_orchestrator/agents_planning_contract.md.tmpl" 0644
 copy_file "$TEMPLATE_ROOT/config/gpu_backend.toml" "$TARGET_REPO/config/gpu_backend.toml" 0644
 copy_file "$TEMPLATE_ROOT/docs/gpu_orchestration.md" "$TARGET_REPO/docs/gpu_orchestration.md" 0644
 
 cmd=(
-  bash "$BOOTSTRAP_SOURCE"
+  python3 "$TARGET_REPO/scripts/bootstrap_orchestrator_wave.py"
   --repo-root "$TARGET_REPO"
   --wave "$WAVE"
   --id-prefix "$ID_PREFIX"

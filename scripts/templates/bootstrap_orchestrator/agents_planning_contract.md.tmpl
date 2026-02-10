@@ -1,0 +1,10 @@
+## Orchestrator Planning Contract
+
+When planning a new wave:
+
+- Build packets under `docs/executor_packets/<wave>/` with one objective per packet.
+- Encode hard ordering in manifest `depends_on` and use `can_run_in_parallel_with` only as advisory.
+- Keep packet `Allowed Files` disjoint for tasks that should run in parallel.
+- Include packet-local deterministic `Validation Commands`.
+- Mark packets `blocked` when dependencies are blocked or scope must expand.
+- Update `orchestrator_state.md` with packet status and blocker reasons.

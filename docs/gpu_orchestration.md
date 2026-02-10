@@ -21,6 +21,8 @@ scripts/inject_orchestration_template.sh \
 ```
 
 The injector bootstraps packet scaffolding and appends the orchestration contracts/context into the target repo `AGENTS.md`.
+It also installs `scripts/bootstrap_orchestrator_wave.py` and `scripts/templates/bootstrap_orchestrator/`
+into the target repo for future wave generation.
 
 ## Components
 
